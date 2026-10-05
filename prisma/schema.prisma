@@ -1,0 +1,102 @@
+// Schéma de la base de données — Fiche d'évaluation BOX AFRICA
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Une session de formation : l'admin la crée, partage son lien/QR aux participants.
+model Session {
+  id        String     @id @default(cuid())
+  slug      String     @unique // identifiant court utilisé dans l'URL publique
+  titre     String // intitulé de la formation
+  organisme String     @default("BOX AFRICA")
+  formateur String
+  lieu      String?
+  dateDebut String? // date / période de la formation (texte libre, ex: "16 au 17/05/2025")
+  active    Boolean    @default(true) // si false, le formulaire n'accepte plus de réponses
+  createdAt DateTime   @default(now())
+  responses Response[]
+  attestation Attestation? // modèle de certificat optionnel attaché à la formation
+}
+
+// Modèle d'attestation (certificat) attaché à une formation.
+// L'admin téléverse un PDF avec un emplacement vide, place le nom dessus,
+// et diffuse un lien protégé par un mot de passe temporaire partagé.
+model Attestation {
+  id        String  @id @default(cuid())
+  sessionId String  @unique
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  pdfData  Bytes // le PDF modèle, stocké en base
+  fileName String
+
+  // Placement normalisé du nom (fractions 0..1 de la page 1, origine haut-gauche)
+  nameX    Float  @default(0.5)
+  nameY    Float  @default(0.5)
+  fontSize Float  @default(24) // points PDF
+  align    String @default("center") // "center" | "left"
+
+  passwordHash String // mot de passe temporaire partagé (hashé)
+  active       Boolean @default(true)
+  createdAt    DateTime @default(now())
+
+  accounts AttestationAccount[]
+}
+
+// Compte créé par un participant pour accéder à son attestation.
+model AttestationAccount {
+  id            String      @id @default(cuid())
+  attestationId String
+  attestation   Attestation @relation(fields: [attestationId], references: [id], onDelete: Cascade)
+
+  nom       String
+  prenom    String
+  email     String
+  telephone String
+
+  passwordHash String // mot de passe perso choisi (reconnexion)
+
+  downloadedAt DateTime? // null = pas encore téléchargé ; daté = déjà fait (1 seule fois)
+  createdAt    DateTime  @default(now())
+
+  @@unique([attestationId, email])
+  @@index([attestationId])
+}
+
+// Une réponse remplie par un participant.
+model Response {
+  id              String  @id @default(cuid())
+  sessionId       String
+  session         Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participantName String? // optionnel
+
+  // Critères notés de 1 à 5 — Organisme formateur
+  methodePedagogique  Int
+  contenuProgramme    Int
+  competenceFormateur Int
+  qualiteAnimation    Int
+
+  // Critères notés de 1 à 5 — Action de formation
+  duree              Int
+  applicationPro     Int
+  atteinteObjectifs  Int
+  supportPedagogique Int
+
+  commentaire String?
+
+  // Données techniques anonymes (audit + anti-doublon) — jamais affichées au public.
+  deviceId  String? // identifiant aléatoire stocké sur l'appareil du participant
+  ipAddress String? // adresse IP au moment de l'envoi
+  userAgent String? // navigateur / système (pour distinguer mobile / ordinateur)
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([sessionId, deviceId])
+}
