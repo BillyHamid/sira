@@ -29,7 +29,7 @@ export async function generateAttestation(
   const page = doc.getPages()[0];
   const { width: W, height: H } = page.getSize();
 
-  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const font = await doc.embedFont(StandardFonts.HelveticaBold);
   const text = formatParticipantName(account);
   const size = attestation.fontSize;
   const textWidth = font.widthOfTextAtSize(text, size);
@@ -48,7 +48,7 @@ export async function generateAttestation(
     y,
     size,
     font,
-    color: rgb(0.1, 0.1, 0.1),
+    color: rgb(0, 174 / 255, 239 / 255),
   });
 
   // Filigrane d'aperçu : empêche d'utiliser le visionneur PDF pour récupérer un

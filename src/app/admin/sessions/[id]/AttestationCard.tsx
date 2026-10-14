@@ -407,7 +407,8 @@ function Configured({
               lineHeight: 1.1,
               whiteSpace: "nowrap",
               cursor: "grab",
-              color: "#1a1a1a",
+              color: "#00aeef",
+              fontWeight: 700,
               fontFamily: "Helvetica, Arial, sans-serif",
               textShadow: "0 0 2px rgba(255,255,255,0.8)",
             }}
