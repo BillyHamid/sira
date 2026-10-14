@@ -98,5 +98,5 @@ model Response {
   createdAt DateTime @default(now())
 
   @@index([sessionId])
-  @@index([sessionId, deviceId])
+  @@unique([sessionId, deviceId])
 }

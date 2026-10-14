@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getParticipantAccountId } from "@/lib/participant-auth";
 import { generateAttestation } from "@/lib/attestation-pdf";
 
-// Aperçu filigrané de l'attestation du participant connecté, affiché inline dans
+// Aperçu personnalisé de l'attestation du participant connecté, affiché inline dans
 // son espace. Ne consomme PAS le téléchargement unique (downloadedAt intact).
 export async function GET(
   _req: Request,
@@ -21,7 +21,7 @@ export async function GET(
     include: { attestation: true },
   });
   const att = session?.attestation;
-  if (!att) {
+  if (!att || !att.active) {
     return NextResponse.json({ error: "Attestation introuvable" }, { status: 404 });
   }
 
@@ -32,7 +32,7 @@ export async function GET(
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 
-  const pdf = await generateAttestation(att, account, { watermark: true });
+  const pdf = await generateAttestation(att, account);
 
   return new NextResponse(new Uint8Array(pdf), {
     headers: {

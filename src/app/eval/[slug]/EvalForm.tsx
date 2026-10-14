@@ -1,32 +1,43 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CRITERIA, CRITERIA_GROUPS, SCALE } from "@/lib/criteria";
-import { submitResponseAction } from "@/lib/actions";
+import { submitResponseAction, resumeEvaluationAction } from "@/lib/actions";
 
 // Génère ou récupère un identifiant d'appareil anonyme (anti-doublon).
 function getDeviceId(): string {
   const KEY = "box_eval_device";
-  let id = localStorage.getItem(KEY);
+  let id: string | null = null;
+  try { id = localStorage.getItem(KEY); } catch { /* Stockage bloqué. */ }
   if (!id) {
     id =
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `dev-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    localStorage.setItem(KEY, id);
+    try { localStorage.setItem(KEY, id); } catch { /* L'envoi reste possible. */ }
   }
   return id;
 }
 
 export default function EvalForm({ slug }: { slug: string }) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [commentaire, setCommentaire] = useState("");
   const [notes, setNotes] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
   const [deviceId, setDeviceId] = useState("");
   const [alreadyDone, setAlreadyDone] = useState(false);
 
   useEffect(() => {
-    setDeviceId(getDeviceId());
-    setAlreadyDone(localStorage.getItem(`box_eval_done_${slug}`) === "1");
+    const timer = window.setTimeout(() => {
+      setDeviceId(getDeviceId());
+      // Ignore les anciens marqueurs, posés avant confirmation serveur.
+      try {
+        setAlreadyDone(localStorage.getItem(`box_eval_confirmed_${slug}`) === "1");
+      } catch { /* Stockage bloqué. */ }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [slug]);
 
   const allRated = CRITERIA.every((c) => notes[c.key]);
@@ -41,22 +52,45 @@ export default function EvalForm({ slug }: { slug: string }) {
           Merci pour votre participation&nbsp;! Une seule réponse par appareil
           est autorisée.
         </p>
+        <button type="button" onClick={async () => {
+          const data = new FormData();
+          data.set("slug", slug);
+          data.set("deviceId", deviceId);
+          try {
+            const result = await resumeEvaluationAction(data);
+            if (result.success) router.push(`/eval/${slug}/merci`);
+            else setError(result.error);
+          } catch { setError("Impossible de retrouver votre réponse. Réessayez."); }
+        }} className="mt-4 text-sm font-semibold underline">Continuer vers mon attestation →</button>
+        {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
       </div>
     );
   }
 
   return (
     <form
-      action={submitResponseAction}
-      onSubmit={() => {
+      action={async (formData) => {
         setSubmitting(true);
-        // Marque l'appareil comme ayant répondu (le serveur vérifie aussi).
-        localStorage.setItem(`box_eval_done_${slug}`, "1");
+        setError(null);
+        try {
+          const result = await submitResponseAction(formData);
+          if (!result.success) {
+            setError(result.error);
+            return;
+          }
+          try { localStorage.setItem(`box_eval_confirmed_${slug}`, "1"); } catch { /* Stockage bloqué. */ }
+          router.push(`/eval/${slug}/merci`);
+        } catch {
+          setError("L’envoi a échoué. Vérifiez votre connexion et réessayez.");
+        } finally {
+          setSubmitting(false);
+        }
       }}
       className="space-y-8"
     >
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="deviceId" value={deviceId} />
+      {error && <p role="alert" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</p>}
 
       {/* Critères, regroupés */}
       {CRITERIA_GROUPS.map((group) => (
@@ -117,6 +151,9 @@ export default function EvalForm({ slug }: { slug: string }) {
           id="commentaire"
           name="commentaire"
           rows={4}
+          maxLength={5000}
+          value={commentaire}
+          onChange={(event) => setCommentaire(event.target.value)}
           placeholder="Vos remarques, suggestions d'amélioration…"
           className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200"
         />
@@ -135,7 +172,7 @@ export default function EvalForm({ slug }: { slug: string }) {
         )}
         <button
           type="submit"
-          disabled={!allRated || submitting}
+          disabled={!allRated || submitting || !deviceId}
           className="w-full rounded-lg bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {submitting ? "Envoi en cours…" : "Envoyer mon évaluation"}

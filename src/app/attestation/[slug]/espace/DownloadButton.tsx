@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Alert, Icon, buttonClass } from "../ui-base";
 
 // Télécharge l'attestation via fetch (plutôt qu'un lien direct) pour gérer
 // proprement le cas "déjà téléchargée" sans afficher de page d'erreur brute,
@@ -46,20 +47,29 @@ export function DownloadButton({
   }
 
   return (
-    <>
-      {error && (
-        <div className="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+    <div className="space-y-3">
+      {error && <Alert tone="error">{error}</Alert>}
       <button
         type="button"
         onClick={handleDownload}
         disabled={loading}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-wait disabled:opacity-70"
+        className={`${buttonClass("primary")} disabled:cursor-wait disabled:opacity-70`}
       >
-        {loading ? "Génération en cours…" : "Télécharger mon attestation"}
+        {loading ? (
+          <>
+            <span
+              className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+              aria-hidden="true"
+            />
+            Génération en cours…
+          </>
+        ) : (
+          <>
+            <Icon name="download" className="h-5 w-5" />
+            Télécharger mon attestation
+          </>
+        )}
       </button>
-    </>
+    </div>
   );
 }

@@ -2,16 +2,9 @@
 // Le cookie ne contient pas le mot de passe mais un jeton dérivé (SHA-256).
 import { cookies } from "next/headers";
 import { createHash } from "crypto";
+import { adminPassword, authSecret } from "./auth-config";
 
 const COOKIE_NAME = "admin_session";
-
-function adminPassword(): string {
-  return process.env.ADMIN_PASSWORD ?? "box-admin";
-}
-
-function authSecret(): string {
-  return process.env.AUTH_SECRET ?? "change-me-secret";
-}
 
 // Jeton attendu dans le cookie pour une session authentifiée.
 function expectedToken(): string {

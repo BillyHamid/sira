@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { computeStats, appreciation } from "@/lib/scoring";
 import { CRITERIA_GROUPS } from "@/lib/criteria";
 import { deviceType, deviceLabel } from "@/lib/device";
+import { getShareBaseUrl } from "@/lib/share-url";
 import {
   toggleSessionAction,
   deleteSessionAction,
@@ -27,11 +28,12 @@ export default async function SessionDashboard({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ attOk?: string; attErr?: string }>;
+  searchParams: Promise<{ attOk?: string; attErr?: string; created?: string }>;
 }) {
   if (!(await isAuthenticated())) redirect("/admin/login");
   const { id } = await params;
-  const { attOk, attErr } = await searchParams;
+  const { attOk, attErr, created } = await searchParams;
+  const baseUrl = await getShareBaseUrl();
 
   const session = await prisma.session.findUnique({
     where: { id },
@@ -120,6 +122,23 @@ export default async function SessionDashboard({
             </div>
           </div>
 
+          {created === "1" && (
+            <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
+              <p className="font-semibold">Session créée ✔</p>
+              <p className="mt-1">
+                Lien à partager aux participants :{" "}
+                <a
+                  href={`${baseUrl}/eval/${session.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all font-mono text-brand-700 underline"
+                >
+                  {`${baseUrl}/eval/${session.slug}`}
+                </a>
+              </p>
+            </div>
+          )}
+
           {session.responses.length === 0 ? (
             <div className="mt-8 grid gap-8 lg:grid-cols-3">
               <div className="lg:col-span-2">
@@ -128,7 +147,7 @@ export default async function SessionDashboard({
                   code ci-contre pour commencer à recueillir des évaluations.
                 </div>
               </div>
-              <ShareCard slug={session.slug} />
+              <ShareCard slug={session.slug} baseUrl={baseUrl} />
             </div>
           ) : (
             <>
@@ -302,7 +321,7 @@ export default async function SessionDashboard({
 
                 {/* Colonne latérale : partage */}
                 <div>
-                  <ShareCard slug={session.slug} />
+                  <ShareCard slug={session.slug} baseUrl={baseUrl} />
                 </div>
               </div>
             </>
@@ -313,6 +332,7 @@ export default async function SessionDashboard({
             <AttestationCard
               sessionId={session.id}
               slug={session.slug}
+              baseUrl={baseUrl}
               attestation={session.attestation}
               accounts={session.attestation?.accounts ?? []}
               feedback={{ ok: attOk === "1", err: attErr }}

@@ -4,6 +4,7 @@ import { getParticipantAccountId } from "@/lib/participant-auth";
 import { formatParticipantName } from "@/lib/attestation-pdf";
 import { MemberHeader } from "./MemberHeader";
 import { DownloadButton } from "./DownloadButton";
+import { Alert, Icon, buttonClass } from "../ui-base";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function EspacePage({
   const account = await prisma.attestationAccount.findUnique({
     where: { id: accountId },
   });
-  if (!account || !att || account.attestationId !== att.id) {
+  if (!account || !att || !att.active || account.attestationId !== att.id) {
     redirect(`/attestation/${slug}`);
   }
 
@@ -44,66 +45,105 @@ export default async function EspacePage({
         email={account!.email}
       />
 
-      <main className="flex-1">
-        <div className="mx-auto max-w-5xl px-4 py-8">
-          {/* Bienvenue */}
-          <h1 className="text-2xl font-bold text-slate-900">
-            Bonjour {account!.prenom} 👋
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Bienvenue dans votre espace membre Box.academy.
-          </p>
+      <main className="flex-1 pb-16">
+        {/* Bandeau d'accueil */}
+        <section className="relative isolate overflow-hidden bg-linear-to-br from-slate-950 via-brand-900 to-brand-700 text-white">
+          <div className="bg-grid absolute inset-0 -z-10 opacity-70 [mask-image:linear-gradient(to_right,black,transparent_80%)]" />
+          <div className="absolute -right-20 -top-24 -z-10 h-72 w-72 rounded-full bg-brand-400/30 blur-3xl" />
+          <div className="animate-fade-up mx-auto max-w-6xl px-4 pb-24 pt-10 sm:px-6 sm:pt-12">
+            <span
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium backdrop-blur ${
+                downloaded
+                  ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-100"
+                  : "border-white/15 bg-white/10 text-brand-100"
+              }`}
+            >
+              <Icon
+                name={downloaded ? "check" : "award"}
+                className="h-3.5 w-3.5"
+              />
+              {downloaded ? "Attestation téléchargée" : "Attestation disponible"}
+            </span>
+            <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+              Bonjour {account!.prenom} 👋
+            </h1>
+            <p className="mt-2 max-w-2xl text-brand-100/85">
+              Voici votre attestation pour la formation{" "}
+              <strong className="font-semibold text-white">
+                {session.titre}
+              </strong>
+              .
+            </p>
+            <dl className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-brand-50">
+              <Chip icon="user" value={session.formateur} />
+              {session.dateDebut && (
+                <Chip icon="calendar" value={session.dateDebut} />
+              )}
+              {session.lieu && <Chip icon="pin" value={session.lieu} />}
+            </dl>
+          </div>
+        </section>
 
-          {/* Cartes de synthèse */}
-          <section className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard label="Formation" value={session.titre} />
-            <StatCard label="Formateur" value={session.formateur} />
-            <StatCard
-              label="Attestation"
-              value={downloaded ? "Téléchargée" : "Disponible"}
-              tone={downloaded ? "done" : "active"}
-            />
-            <StatCard
-              label="Date de la formation"
-              value={session.dateDebut || "—"}
-            />
-          </section>
+        <div className="mx-auto -mt-16 grid max-w-6xl gap-6 px-4 sm:px-6 lg:grid-cols-3">
+          {/* Attestation */}
+          <section className="animate-fade-up rounded-2xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-900/5 sm:p-6 lg:col-span-2">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-brand-100">
+                <Icon name="award" className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Mon attestation
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Retrouvez ci-dessous votre attestation personnalisée avec votre nom et prénom.
+                </p>
+              </div>
+            </div>
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-3">
-            {/* Attestation */}
-            <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-              <h2 className="text-lg font-semibold text-slate-900">
-                Mon attestation
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Aperçu filigrané ci-dessous. Téléchargez la version propre (sans
-                filigrane) — possible <strong>une seule fois</strong>.
-              </p>
-
-              <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+            {/* Document présenté comme une feuille posée sur un plan de travail */}
+            <div className="mt-5 rounded-xl bg-slate-100 p-3 ring-1 ring-inset ring-slate-200 sm:p-5">
+              <div className="overflow-hidden rounded-lg bg-white shadow-lg shadow-slate-900/10 ring-1 ring-slate-200">
                 <iframe
                   src={`/api/attestation/${slug}/preview`}
                   title="Aperçu de l'attestation"
-                  className="h-[460px] w-full"
+                  className="h-[320px] w-full sm:h-[460px]"
                 />
               </div>
+              <a
+                href={`/api/attestation/${slug}/preview`}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 flex items-center justify-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline"
+              >
+                <Icon name="eye" className="h-4 w-4" />
+                Ouvrir l&apos;aperçu en plein écran
+              </a>
+            </div>
 
+            <div className="mt-5">
               {downloaded ? (
-                <>
-                  <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    Version propre déjà téléchargée le{" "}
+                <div className="space-y-3">
+                  <Alert tone="warning">
+                    Attestation téléchargée le{" "}
                     {new Date(account!.downloadedAt!).toLocaleString("fr-FR")}.
                     L&apos;aperçu ci-dessus reste consultable à tout moment.
-                  </div>
-                  <button
-                    disabled
-                    className="mt-3 w-full cursor-not-allowed rounded-lg bg-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-400"
-                  >
+                  </Alert>
+                  <button disabled className={buttonClass("disabled")}>
+                    <Icon name="check" className="h-5 w-5" />
                     Attestation déjà téléchargée
                   </button>
-                </>
+                </div>
               ) : (
-                <div className="mt-4">
+                <div className="space-y-3">
+                  <p className="flex items-start gap-2 rounded-xl bg-brand-50 px-3.5 py-3 text-sm text-brand-800 ring-1 ring-inset ring-brand-100">
+                    <Icon name="shield" className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                      Le téléchargement depuis ce bouton n&apos;est possible
+                      qu&apos;<strong className="font-semibold">une seule fois</strong>.
+                      Enregistrez bien le fichier.
+                    </span>
+                  </p>
                   <DownloadButton
                     slug={slug}
                     fileName={`attestation_${fullName
@@ -112,40 +152,31 @@ export default async function EspacePage({
                   />
                 </div>
               )}
-            </section>
-
-            {/* Profil + détails formation */}
-            <div className="space-y-6">
-              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-sm font-semibold text-slate-800">
-                  Mes informations
-                </h2>
-                <dl className="mt-3 space-y-3 text-sm">
-                  <InfoRow label="Nom" value={account!.nom.toUpperCase()} />
-                  <InfoRow label="Prénom" value={account!.prenom} />
-                  <InfoRow label="Email" value={account!.email} />
-                  <InfoRow label="Téléphone" value={account!.telephone} />
-                  <InfoRow
-                    label="Membre depuis"
-                    value={new Date(account!.createdAt).toLocaleDateString(
-                      "fr-FR"
-                    )}
-                  />
-                </dl>
-              </section>
-
-              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-sm font-semibold text-slate-800">
-                  Détails de la formation
-                </h2>
-                <dl className="mt-3 space-y-3 text-sm">
-                  <InfoRow label="Intitulé" value={session.titre} />
-                  <InfoRow label="Organisme" value={session.organisme} />
-                  <InfoRow label="Formateur" value={session.formateur} />
-                  {session.lieu && <InfoRow label="Lieu" value={session.lieu} />}
-                </dl>
-              </section>
             </div>
+          </section>
+
+          {/* Profil + détails formation */}
+          <div className="animate-fade-up space-y-6 [animation-delay:80ms]">
+            <Panel title="Mes informations">
+              <InfoRow icon="user" label="Nom" value={account!.nom.toUpperCase()} />
+              <InfoRow icon="user" label="Prénom" value={account!.prenom} />
+              <InfoRow icon="mail" label="Email" value={account!.email} />
+              <InfoRow icon="phone" label="Téléphone" value={account!.telephone} />
+              <InfoRow
+                icon="calendar"
+                label="Membre depuis"
+                value={new Date(account!.createdAt).toLocaleDateString("fr-FR")}
+              />
+            </Panel>
+
+            <Panel title="Détails de la formation">
+              <InfoRow icon="award" label="Intitulé" value={session.titre} />
+              <InfoRow icon="shield" label="Organisme" value={session.organisme} />
+              <InfoRow icon="user" label="Formateur" value={session.formateur} />
+              {session.lieu && (
+                <InfoRow icon="pin" label="Lieu" value={session.lieu} />
+              )}
+            </Panel>
           </div>
         </div>
       </main>
@@ -153,41 +184,56 @@ export default async function EspacePage({
   );
 }
 
-function StatCard({
-  label,
+function Chip({
+  icon,
   value,
-  tone,
 }: {
-  label: string;
+  icon: "user" | "calendar" | "pin";
   value: string;
-  tone?: "active" | "done";
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-        {label}
-      </p>
-      <p className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-900">
-        {tone && (
-          <span
-            className={`h-2 w-2 shrink-0 rounded-full ${
-              tone === "done" ? "bg-emerald-500" : "bg-brand-500"
-            }`}
-          />
-        )}
-        <span className="truncate" title={value}>
-          {value}
-        </span>
-      </p>
+    <div className="flex items-center gap-2">
+      <Icon name={icon} className="h-4 w-4 text-brand-200" />
+      <dd>{value}</dd>
     </div>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function Panel({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex justify-between gap-3">
-      <dt className="text-slate-400">{label}</dt>
-      <dd className="text-right font-medium text-slate-700">{value}</dd>
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
+      <dl className="mt-4 space-y-3.5">{children}</dl>
+    </section>
+  );
+}
+
+function InfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: "user" | "calendar" | "pin" | "mail" | "phone" | "award" | "shield";
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-400 ring-1 ring-slate-100">
+        <Icon name={icon} className="h-4 w-4" />
+      </span>
+      <div className="min-w-0">
+        <dt className="text-xs text-slate-400">{label}</dt>
+        <dd className="truncate text-sm font-medium text-slate-800" title={value}>
+          {value}
+        </dd>
+      </div>
     </div>
   );
 }

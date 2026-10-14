@@ -5,153 +5,119 @@ import {
   registerParticipantAction,
   loginParticipantAction,
 } from "@/lib/attestation-actions";
+import { Field } from "./ui";
+import { Alert, buttonClass } from "./ui-base";
 
-const inputClass =
-  "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200";
-const labelClass = "block text-sm font-medium text-slate-700";
+const TABS = [
+  { id: "register", label: "Créer mon compte" },
+  { id: "login", label: "Déjà inscrit" },
+] as const;
 
 export function AuthTabs({
   slug,
   defaultTab,
   error,
+  allowRegister = true,
 }: {
   slug: string;
   defaultTab: "register" | "login";
   error?: string;
+  allowRegister?: boolean;
 }) {
   const [tab, setTab] = useState<"register" | "login">(defaultTab);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div>
+      <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+        {tab === "register" ? "Créez votre compte" : "Bon retour parmi nous"}
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-slate-500">
+        {tab === "register"
+          ? "Quelques informations suffisent pour accéder à votre attestation."
+          : "Connectez-vous pour retrouver votre attestation."}
+      </p>
+
       {/* Onglets */}
-      <div className="grid grid-cols-2 border-b border-slate-200 text-sm font-medium">
-        <button
-          type="button"
-          onClick={() => setTab("register")}
-          className={`px-4 py-3 transition ${
-            tab === "register"
-              ? "border-b-2 border-brand-600 text-brand-700"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          Créer mon compte
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("login")}
-          className={`px-4 py-3 transition ${
-            tab === "login"
-              ? "border-b-2 border-brand-600 text-brand-700"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          Déjà inscrit
-        </button>
+      <div
+        role="tablist"
+        className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 text-sm font-medium"
+      >
+        {TABS.filter((t) => allowRegister || t.id === "login").map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className={`rounded-lg px-4 py-2 transition ${
+              tab === t.id
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      <div className="p-6">
-        {error && <ErrorBanner code={error} />}
+      <div className="mt-6">
+        {error && (
+          <div className="mb-5">
+            <ErrorBanner code={error} />
+          </div>
+        )}
 
         {tab === "register" ? (
           <form action={registerParticipantAction} className="space-y-4">
             <input type="hidden" name="slug" value={slug} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={labelClass} htmlFor="nom">
-                  Nom
-                </label>
-                <input id="nom" name="nom" required className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="prenom">
-                  Prénom
-                </label>
-                <input
-                  id="prenom"
-                  name="prenom"
-                  required
-                  className={inputClass}
-                />
-              </div>
+              <Field id="nom" name="nom" label="Nom" icon="user" autoComplete="family-name" />
+              <Field id="prenom" name="prenom" label="Prénom" icon="user" autoComplete="given-name" />
             </div>
-            <div>
-              <label className={labelClass} htmlFor="email">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="telephone">
-                Numéro de téléphone
-              </label>
-              <input
-                id="telephone"
-                name="telephone"
-                type="tel"
-                required
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="password-reg">
-                Mot de passe
-              </label>
-              <input
-                id="password-reg"
-                name="password"
-                type="password"
-                required
-                minLength={4}
-                className={inputClass}
-              />
-              <p className="mt-1 text-xs text-slate-400">
-                Il vous permettra de revenir consulter votre attestation.
-              </p>
-            </div>
-            <button
-              type="submit"
-              className="w-full rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
-            >
+            <Field id="email" name="email" label="Email" type="email" icon="mail" autoComplete="email" />
+            <Field
+              id="telephone"
+              name="telephone"
+              label="Numéro de téléphone"
+              type="tel"
+              icon="phone"
+              autoComplete="tel"
+            />
+            <Field
+              id="password-reg"
+              name="password"
+              label="Mot de passe"
+              type="password"
+              icon="lock"
+              minLength={8}
+              maxLength={256}
+              autoComplete="new-password"
+              hint="Il vous permettra de revenir consulter votre attestation."
+            />
+            <button type="submit" className={`${buttonClass("primary")} mt-2`}>
               Créer mon compte et accéder
             </button>
           </form>
         ) : (
           <form action={loginParticipantAction} className="space-y-4">
             <input type="hidden" name="slug" value={slug} />
-            <div>
-              <label className={labelClass} htmlFor="email-login">
-                Email
-              </label>
-              <input
-                id="email-login"
-                name="email"
-                type="email"
-                required
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="password-login">
-                Mot de passe
-              </label>
-              <input
-                id="password-login"
-                name="password"
-                type="password"
-                required
-                className={inputClass}
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
-            >
+            <Field
+              id="email-login"
+              name="email"
+              label="Email"
+              type="email"
+              icon="mail"
+              autoComplete="email"
+            />
+            <Field
+              id="password-login"
+              name="password"
+              label="Mot de passe"
+              type="password"
+              icon="lock"
+              autoComplete="current-password"
+            />
+            <button type="submit" className={`${buttonClass("dark")} mt-2`}>
               Se connecter
             </button>
           </form>
@@ -163,13 +129,11 @@ export function AuthTabs({
 
 function ErrorBanner({ code }: { code: string }) {
   const messages: Record<string, string> = {
-    champs: "Merci de remplir tous les champs (mot de passe d'au moins 4 caractères).",
+    champs: "Vérifiez les champs, l’adresse email et le mot de passe (8 caractères minimum).",
     existe: "Un compte existe déjà avec cet email. Connectez-vous.",
     identifiants: "Email ou mot de passe incorrect.",
   };
   return (
-    <div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
-      {messages[code] ?? "Une erreur est survenue."}
-    </div>
+    <Alert tone="error">{messages[code] ?? "Une erreur est survenue."}</Alert>
   );
 }

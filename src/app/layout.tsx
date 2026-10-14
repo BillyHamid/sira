@@ -8,9 +8,9 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Évaluation de formation — BOX AFRICA",
+  title: "Formations & espace participant — BOX AFRICA",
   description:
-    "Plateforme d'évaluation à chaud des formations BOX AFRICA : recueil des avis et tableau de bord statistique.",
+    "Retrouvez les formations BOX AFRICA, partagez votre expérience et accédez à votre attestation personnalisée.",
 };
 
 export default function RootLayout({

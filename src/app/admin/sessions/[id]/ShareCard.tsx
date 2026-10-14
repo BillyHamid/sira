@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 
-export default function ShareCard({ slug }: { slug: string }) {
-  const [url, setUrl] = useState("");
+export default function ShareCard({
+  slug,
+  baseUrl,
+}: {
+  slug: string;
+  baseUrl: string;
+}) {
+  const url = `${baseUrl}/formations/${slug}`;
   const [copied, setCopied] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const base =
-      process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
-    setUrl(`${base.replace(/\/$/, "")}/eval/${slug}`);
-  }, [slug]);
 
   async function copy() {
     await navigator.clipboard.writeText(url);
@@ -32,10 +32,10 @@ export default function ShareCard({ slug }: { slug: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <h3 className="text-sm font-semibold text-slate-800">
-        Partager l&apos;évaluation
+        Partager la formation
       </h3>
       <p className="mt-1 text-xs text-slate-500">
-        Envoyez ce lien aux participants ou affichez le QR code.
+        Le QR code ouvre la présentation, puis guide les participants vers l’évaluation et l’attestation.
       </p>
 
       <div className="mt-4 flex flex-col items-center gap-3">

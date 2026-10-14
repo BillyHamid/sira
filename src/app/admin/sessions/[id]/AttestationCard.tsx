@@ -11,6 +11,7 @@ import {
   saveAttestationAction,
   toggleAttestationAction,
   deleteAttestationAction,
+  resetAttestationDownloadAction,
 } from "@/lib/attestation-actions";
 
 // Garantit que requestAnimationFrame déclenche ses callbacks même si l'onglet est
@@ -55,12 +56,14 @@ const inputClass =
 export default function AttestationCard({
   sessionId,
   slug,
+  baseUrl,
   attestation,
   accounts = [],
   feedback,
 }: {
   sessionId: string;
   slug: string;
+  baseUrl: string;
   attestation: AttestationData;
   accounts?: AccountRow[];
   feedback?: { ok?: boolean; err?: string };
@@ -93,6 +96,7 @@ export default function AttestationCard({
           <Configured
             sessionId={sessionId}
             slug={slug}
+            baseUrl={baseUrl}
             attestation={attestation}
           />
           <ParticipantsList accounts={accounts} />
@@ -147,9 +151,17 @@ function ParticipantsList({ accounts }: { accounts: AccountRow[] }) {
                   </td>
                   <td className="whitespace-nowrap px-3 py-2">
                     {a.downloadedAt ? (
+                      <div>
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
                         ✓ {new Date(a.downloadedAt).toLocaleString("fr-FR")}
                       </span>
+                      <form action={resetAttestationDownloadAction} className="mt-2">
+                        <input type="hidden" name="accountId" value={a.id} />
+                        <button type="submit" className="text-xs font-medium text-brand-700 underline">
+                          Réautoriser le téléchargement
+                        </button>
+                      </form>
+                      </div>
                     ) : (
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
                         Pas encore
@@ -180,7 +192,7 @@ function Feedback({ feedback }: { feedback?: { ok?: boolean; err?: string } }) {
       fichier: "Veuillez sélectionner un fichier PDF.",
       motdepasse: "Veuillez définir un mot de passe temporaire.",
       type: "Le fichier doit être un PDF.",
-      taille: "Le PDF dépasse la taille maximale (5 Mo).",
+      taille: "Le PDF dépasse la taille maximale (3 Mo).",
     };
     return (
       <div className="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -202,7 +214,7 @@ function UploadForm({ sessionId }: { sessionId: string }) {
       </p>
       <div>
         <label className="block text-sm font-medium text-slate-700">
-          Fichier PDF (max 5 Mo)
+          Fichier PDF (max 3 Mo)
         </label>
         <input
           type="file"
@@ -238,10 +250,12 @@ function UploadForm({ sessionId }: { sessionId: string }) {
 function Configured({
   sessionId,
   slug,
+  baseUrl,
   attestation,
 }: {
   sessionId: string;
   slug: string;
+  baseUrl: string;
   attestation: NonNullable<AttestationData>;
 }) {
   const [nameX, setNameX] = useState(attestation.nameX);
@@ -258,6 +272,11 @@ function Configured({
   const [dispW, setDispW] = useState(0); // largeur affichée px
   const [rendered, setRendered] = useState(false);
   const [renderError, setRenderError] = useState(false);
+
+  const measure = useCallback(() => {
+    const c = canvasRef.current;
+    if (c) setDispW(c.getBoundingClientRect().width);
+  }, []);
 
   // Rendu de la page 1 du PDF modèle via pdfjs.
   // Le démarrage est différé (setTimeout) puis annulé au nettoyage : ainsi le
@@ -321,13 +340,7 @@ function Configured({
       cancelled = true;
       clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId]);
-
-  const measure = useCallback(() => {
-    const c = canvasRef.current;
-    if (c) setDispW(c.getBoundingClientRect().width);
-  }, []);
+  }, [sessionId, measure]);
 
   useEffect(() => {
     window.addEventListener("resize", measure);
@@ -461,7 +474,7 @@ function Configured({
       </form>
 
       {/* Lien public + mot de passe */}
-      <ShareAttestation slug={slug} />
+      <ShareAttestation slug={slug} baseUrl={baseUrl} />
 
       {/* Remplacer le modèle / changer le mot de passe */}
       <details className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -528,14 +541,15 @@ function Configured({
   );
 }
 
-function ShareAttestation({ slug }: { slug: string }) {
-  const [url, setUrl] = useState("");
+function ShareAttestation({
+  slug,
+  baseUrl,
+}: {
+  slug: string;
+  baseUrl: string;
+}) {
+  const url = `${baseUrl}/attestation/${slug}`;
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    const base = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
-    setUrl(`${base.replace(/\/$/, "")}/attestation/${slug}`);
-  }, [slug]);
 
   async function copy() {
     await navigator.clipboard.writeText(url);

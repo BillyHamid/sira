@@ -20,8 +20,150 @@
 
 html {
   color-scheme: light;
+  scroll-behavior: smooth;
 }
+
+.formation-cosmos { background: radial-gradient(ellipse at 18% 45%, #50294d 0%, transparent 57%), radial-gradient(ellipse at 80% 0%, #24374e 0%, transparent 60%), linear-gradient(115deg, #1b0723, #07172d 75%); }
+.cosmos-stars { opacity: .65; background-image: radial-gradient(1px 1px at 13px 24px,#fff 90%,transparent), radial-gradient(1px 1px at 76px 91px,#d9dfff 90%,transparent), radial-gradient(.7px .7px at 53px 16px,#fff 90%,transparent), radial-gradient(1.3px 1.3px at 124px 54px,#e9d7f3 90%,transparent); background-size: 137px 119px, 191px 173px, 83px 97px, 257px 211px; }
+.cosmos-nebula { opacity: .5; background: linear-gradient(112deg,transparent 15%,#b78abd16 24%,transparent 29%,#b78abd20 35%,transparent 41%,#e4d7f518 63%,transparent 72%); filter: blur(16px); }
+.cosmos-title { font-family: "Segoe Print", "Bradley Hand", cursive; text-shadow: 0 2px 18px #c89bd030; }
+@media (prefers-reduced-motion: no-preference) { .cosmos-nebula { animation: cosmic-drift 18s ease-in-out infinite alternate; } }
+@keyframes cosmic-drift { from { transform: translateX(-2%); } to { transform: translateX(3%); } }
+
+@keyframes intro-mark { from { opacity: 0; transform: translateY(12px); filter: blur(5px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+@keyframes intro-line { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes intro-safety { to { visibility: hidden; } }
+.home-intro { transition: clip-path 1.15s cubic-bezier(.76,0,.24,1), visibility 0s 1.2s; clip-path: inset(0 0 0 0); animation: intro-safety 0s 4s forwards; }
+.home-intro-mark { animation: intro-mark .7s ease-out both; }
+.home-intro-line { animation: intro-line 1.4s cubic-bezier(.3,.1,.2,1) both; }
+.home-intro-exit { clip-path: inset(0 0 100% 0); visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .home-intro { display: none; } }
+
+/* Motifs des cartes de formation. */
+.editorial-link span:last-child { transition: transform .3s ease; }
+.editorial-link:hover span:last-child { transform: translate(3px, 3px); }
+@keyframes editorial-reveal { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes editorial-photo { from { transform: scale(1.06); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: no-preference) {
+  .editorial-title { animation: editorial-reveal .9s cubic-bezier(.2,.7,.3,1) both; }
+  .editorial-photo { animation: editorial-photo 1.6s ease-out both; }
+}
+.course-art-0 { background: linear-gradient(135deg, #155b78, #12364c); }
+.course-art-1 { background: linear-gradient(135deg, #526d61, #254a41); }
+.course-art-2 { background: linear-gradient(135deg, #695782, #39324e); }
+.course-art-shape { position: absolute; width: 180px; height: 180px; right: 12%; top: -35px; border: 1px solid #ffffff50; border-radius: 28px; transform: rotate(35deg); box-shadow: 25px 25px 0 -1px #ffffff08, 25px 25px 0 0 #ffffff30, 50px 50px 0 -1px #ffffff05, 50px 50px 0 0 #ffffff18; transition: transform .6s; }
+.group:hover .course-art-shape { transform: rotate(50deg) translateY(-8px); }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .course-art-shape { transition: none; } }
 
 body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Quadrillage discret pour les panneaux sombres */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+/* Apparition douce des blocs principaux */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-fade-up {
+  animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up {
+    animation: none;
+  }
+}
+
+/* ===== Décor animé des panneaux de marque (BrandBackdrop) ===== */
+@keyframes blob-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-60px, 70px, 0) scale(1.25); }
+}
+@keyframes blob-b {
+  from { transform: translate3d(0, 0, 0) scale(1.1); }
+  to { transform: translate3d(80px, -60px, 0) scale(0.9); }
+}
+@keyframes cube-float {
+  from { transform: translate3d(0, 0, 0) rotate(-3deg); }
+  to { transform: translate3d(0, -26px, 0) rotate(4deg); }
+}
+@keyframes cube-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes cube-fade-in {
+  from { opacity: 0; }
+}
+@keyframes light-sweep {
+  from { background-position: 160% 0; }
+  to { background-position: -60% 0; }
+}
+@keyframes particle-rise {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  12% { opacity: 1; }
+  85% { opacity: 0.8; }
+  100% { transform: translate3d(var(--drift, 20px), calc(-1 * var(--rise, 700px)), 0); opacity: 0; }
+}
+@keyframes cert-float {
+  from { transform: rotate(-6deg) translateY(0); }
+  to { transform: rotate(-3deg) translateY(-10px); }
+}
+@keyframes cert-write {
+  0%, 12% { transform: scaleX(0); opacity: 1; }
+  32%, 88% { transform: scaleX(1); opacity: 1; }
+  96%, 100% { transform: scaleX(1); opacity: 0; }
+}
+@keyframes cert-seal {
+  0%, 38% { transform: scale(0) rotate(-40deg); opacity: 0; }
+  50% { transform: scale(1.2) rotate(6deg); opacity: 1; }
+  58%, 88% { transform: scale(1) rotate(0); opacity: 1; }
+  96%, 100% { transform: scale(1); opacity: 0; }
+}
+@keyframes cert-shine {
+  0%, 55% { transform: translateX(-120%); }
+  80%, 100% { transform: translateX(260%); }
+}
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgb(255 255 255 / 0.2); }
+  50% { box-shadow: 0 0 0 9px rgb(255 255 255 / 0); }
+}
+
+/* Visible et statique par défaut ; animé seulement si l'utilisateur l'accepte. */
+.cube-edge { stroke-dasharray: 1; stroke-dashoffset: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .anim-blob-a { animation: blob-a 16s ease-in-out infinite alternate; }
+  .anim-blob-b { animation: blob-b 20s ease-in-out infinite alternate; }
+  .anim-cube { animation: cube-float var(--dur, 9s) ease-in-out var(--delay, 0s) infinite alternate; }
+  .anim-cube-in { animation: cube-fade-in 1.2s ease-out var(--delay, 0s) both; }
+  .cube-edge {
+    stroke-dashoffset: 1;
+    animation: cube-draw 1.8s cubic-bezier(0.65, 0, 0.35, 1) var(--delay, 0s) forwards;
+  }
+  .anim-sweep { animation: light-sweep 9s ease-in-out infinite; }
+  .anim-particle {
+    animation: particle-rise var(--dur, 12s) linear var(--delay, 0s) infinite;
+  }
+  .anim-cert { animation: cert-float 6s ease-in-out infinite alternate; }
+  .anim-cert-line {
+    transform-origin: left center;
+    animation: cert-write 9s ease-in-out var(--delay, 0s) infinite both;
+  }
+  .anim-cert-seal { animation: cert-seal 9s ease-out 2s infinite both; }
+  .anim-cert-shine { animation: cert-shine 9s ease-in-out 2s infinite; }
+  .anim-step-pulse { animation: step-pulse 2.4s ease-in-out infinite; }
 }

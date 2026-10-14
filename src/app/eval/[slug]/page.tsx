@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { ParticipantHeader } from "@/components/ParticipantHeader";
 import { prisma } from "@/lib/prisma";
 import EvalForm from "./EvalForm";
 
@@ -16,8 +18,10 @@ export default async function EvalPage({
   if (!session) notFound();
 
   return (
-    <main className="flex-1 px-4 py-8">
+    <><ParticipantHeader /><main className="flex-1 px-4 py-8">
       <div className="mx-auto max-w-2xl">
+        <Link href={`/formations/${slug}`} className="mb-5 inline-block text-sm text-brand-700 hover:underline">← Présentation de la formation</Link>
+        <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Étape 1 · Votre évaluation</p>
         {/* En-tête de la session */}
         <header className="rounded-xl bg-linear-to-br from-brand-600 to-brand-700 p-6 text-white shadow">
           <p className="text-xs font-medium uppercase tracking-wide text-brand-100">
@@ -82,6 +86,6 @@ export default async function EvalPage({
           </div>
         )}
       </div>
-    </main>
+    </main></>
   );
 }

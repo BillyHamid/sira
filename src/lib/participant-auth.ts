@@ -1,24 +1,10 @@
 // Authentification des participants à l'espace attestation.
-// Même esprit que src/lib/auth.ts (admin) : pas de stockage de mot de passe en clair,
-// jetons dérivés en SHA-256 salés avec AUTH_SECRET, cookies httpOnly.
+// Mots de passe scrypt avec sel individuel ; cookies httpOnly signés par secret.
 import { cookies } from "next/headers";
 import { createHash } from "crypto";
+import { authSecret } from "./auth-config";
 
-function authSecret(): string {
-  return process.env.AUTH_SECRET ?? "change-me-secret";
-}
-
-// --- Hachage des mots de passe (temporaire d'attestation + perso participant) ---
-// SHA-256 salé. Suffisant pour ce contexte (cohérent avec l'auth admin existante).
-export function hashPassword(password: string): string {
-  return createHash("sha256")
-    .update(`${password}::${authSecret()}`)
-    .digest("hex");
-}
-
-export function verifyPassword(password: string, hash: string): boolean {
-  return hashPassword(password) === hash;
-}
+export { hashPassword, verifyPassword } from "./passwords";
 
 // ============================== SESSION PARTICIPANT ==============================
 // Cookie d'identité : jeton dérivé de l'id du compte (pas l'id en clair seul).

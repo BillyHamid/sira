@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "./prisma";
 import { isAuthenticated } from "./auth";
+import { PDFDocument } from "pdf-lib";
+import { readAttestationPlacement } from "./attestation-placement";
+import { hasCompletedEvaluation } from "./evaluation-progress";
 import {
   hashPassword,
   verifyPassword,
@@ -13,7 +16,7 @@ import {
   hasGatePass,
 } from "./participant-auth";
 
-const MAX_PDF_BYTES = 5 * 1024 * 1024; // 5 Mo
+const MAX_PDF_BYTES = 3 * 1024 * 1024; // Marge sous la limite des fonctions Vercel.
 
 async function requireAdmin() {
   if (!(await isAuthenticated())) {
@@ -39,12 +42,7 @@ export async function saveAttestationAction(formData: FormData) {
   const back = `/admin/sessions/${sessionId}`;
 
   // Placement (avec valeurs par défaut raisonnables si absent).
-  const nameX = clamp01(Number(formData.get("nameX")), 0.5);
-  const nameY = clamp01(Number(formData.get("nameY")), 0.5);
-  const fontSizeRaw = Number(formData.get("fontSize"));
-  const fontSize =
-    Number.isFinite(fontSizeRaw) && fontSizeRaw > 0 ? fontSizeRaw : 24;
-  const align = String(formData.get("align") ?? "center") === "left" ? "left" : "center";
+  const { nameX, nameY, fontSize, align } = readAttestationPlacement(formData, existing);
 
   // Fichier PDF (optionnel en mise à jour).
   const file = formData.get("file");
@@ -58,12 +56,18 @@ export async function saveAttestationAction(formData: FormData) {
       redirect(`${back}?attErr=taille`);
     }
     pdfData = new Uint8Array(await file.arrayBuffer());
+    try {
+      const pdf = await PDFDocument.load(pdfData);
+      if (pdf.getPageCount() < 1) redirect(`${back}?attErr=type`);
+    } catch {
+      redirect(`${back}?attErr=type`);
+    }
     fileName = file.name;
   }
 
   // Mot de passe temporaire (optionnel en mise à jour).
   const password = String(formData.get("password") ?? "").trim();
-  const passwordHash = password ? hashPassword(password) : undefined;
+  const passwordHash = password ? await hashPassword(password) : undefined;
 
   if (!existing) {
     // Création : fichier ET mot de passe obligatoires.
@@ -122,6 +126,23 @@ export async function deleteAttestationAction(formData: FormData) {
   redirect(`/admin/sessions/${sessionId}`);
 }
 
+// Récupération après un téléchargement interrompu : réservée à l'organisateur.
+export async function resetAttestationDownloadAction(formData: FormData) {
+  await requireAdmin();
+  const accountId = String(formData.get("accountId") ?? "");
+  const account = await prisma.attestationAccount.findUnique({
+    where: { id: accountId },
+    include: { attestation: { select: { sessionId: true, session: { select: { slug: true } } } } },
+  });
+  if (!account) return;
+  await prisma.attestationAccount.update({
+    where: { id: account.id },
+    data: { downloadedAt: null },
+  });
+  revalidatePath(`/admin/sessions/${account.attestation.sessionId}`);
+  revalidatePath(`/attestation/${account.attestation.session.slug}/espace`);
+}
+
 // ============================== PUBLIC (PARTICIPANT) ==============================
 
 // Étape 1 : vérifier le mot de passe temporaire partagé → pose le cookie de passage.
@@ -135,7 +156,7 @@ export async function gateAction(formData: FormData) {
   const att = session?.attestation;
   if (!att || !att.active) redirect(`/attestation/${slug}?err=indispo`);
 
-  if (!verifyPassword(password, att.passwordHash)) {
+  if (!(await verifyPassword(password, att.passwordHash))) {
     redirect(`/attestation/${slug}?err=motdepasse`);
   }
   await createGatePass(session!.id, att.passwordHash);
@@ -152,6 +173,10 @@ export async function registerParticipantAction(formData: FormData) {
   const att = session?.attestation;
   if (!att || !att.active) redirect(`/attestation/${slug}?err=indispo`);
 
+  if (!(await hasCompletedEvaluation(session!.id))) {
+    redirect(`/eval/${slug}`);
+  }
+
   // On exige le passage par le portail (mot de passe temporaire).
   if (!(await hasGatePass(session!.id, att.passwordHash))) {
     redirect(`/attestation/${slug}`);
@@ -163,7 +188,9 @@ export async function registerParticipantAction(formData: FormData) {
   const telephone = String(formData.get("telephone") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  if (!nom || !prenom || !email || !telephone || password.length < 4) {
+  if (!nom || !prenom || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      !telephone || password.length < 8 || password.length > 256 ||
+      nom.length > 100 || prenom.length > 100 || email.length > 254 || telephone.length > 40) {
     redirect(`/attestation/${slug}?err=champs&tab=register`);
   }
 
@@ -181,7 +208,7 @@ export async function registerParticipantAction(formData: FormData) {
       prenom,
       email,
       telephone,
-      passwordHash: hashPassword(password),
+      passwordHash: await hashPassword(password),
     },
   });
   await createParticipantSession(account.id);
@@ -196,7 +223,7 @@ export async function loginParticipantAction(formData: FormData) {
     include: { attestation: true },
   });
   const att = session?.attestation;
-  if (!att) redirect(`/attestation/${slug}?err=indispo`);
+  if (!att || !att.active) redirect(`/attestation/${slug}?err=indispo`);
 
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
@@ -204,8 +231,14 @@ export async function loginParticipantAction(formData: FormData) {
   const account = await prisma.attestationAccount.findUnique({
     where: { attestationId_email: { attestationId: att.id, email } },
   });
-  if (!account || !verifyPassword(password, account.passwordHash)) {
+  if (!account || !(await verifyPassword(password, account.passwordHash))) {
     redirect(`/attestation/${slug}?err=identifiants&tab=login`);
+  }
+  if (!account.passwordHash.startsWith("scrypt:")) {
+    await prisma.attestationAccount.update({
+      where: { id: account.id },
+      data: { passwordHash: await hashPassword(password) },
+    });
   }
   await createParticipantSession(account.id);
   redirect(`/attestation/${slug}/espace`);
@@ -215,10 +248,4 @@ export async function logoutParticipantAction(formData: FormData) {
   const slug = String(formData.get("slug") ?? "");
   await destroyParticipantSession();
   redirect(`/attestation/${slug}`);
-}
-
-// --- util ---
-function clamp01(v: number, fallback: number): number {
-  if (!Number.isFinite(v)) return fallback;
-  return Math.min(1, Math.max(0, v));
 }
