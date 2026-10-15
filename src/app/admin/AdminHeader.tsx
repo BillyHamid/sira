@@ -12,6 +12,7 @@ export default function AdminHeader() {
             | Administration des évaluations
           </span>
         </Link>
+        <Link href="/admin/quizzes" className="rounded-lg px-3 py-2 text-sm font-semibold text-cyan-800">Quiz live</Link>
         <form action={logoutAction}>
           <button
             type="submit"

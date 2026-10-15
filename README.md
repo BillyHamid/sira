@@ -96,6 +96,48 @@ Ne jamais exposer les mots de passe de base de données dans une variable
 `NEXT_PUBLIC_*`. Les PDF sont limités à 3 Mo pour rester sous les limites de
 requête et de réponse des fonctions Vercel.
 
+## Quiz QCM en direct
+
+Depuis `/admin/quizzes` (lien **Quiz live** dans l’en-tête admin), créer un quiz
+indépendant ou l’associer à une formation. Chaque question comporte 2 à 6 choix,
+avec une ou plusieurs bonnes réponses. Le brouillon reste modifiable jusqu’à
+l’ouverture des inscriptions ; ensuite les questions sont figées.
+
+1. Ouvrir les inscriptions, partager le lien `/quiz/[slug]` ou imprimer le QR code.
+2. Chaque participant saisit son nom et prénom sur son propre navigateur.
+3. Une fois tous les inscrits présents, donner le départ : un compte à rebours de
+   8 secondes prépare le lancement commun. Les inscriptions se ferment.
+4. Projeter la page admin : le classement des copies validées s’actualise toutes
+   les 3 secondes. Le participant reçoit les changements toutes les 4 secondes.
+5. À l’échéance (ou à la clôture manuelle), afficher le gagnant et les confettis.
+   Les ex æquo parfaits sont célébrés ensemble. Le corrigé est alors disponible.
+
+Le score exact prime sur le temps serveur depuis le départ commun. Cocher tous
+les choix ne donne aucun bonus. Une copie validée est définitive. Les réponses
+sont sauvegardées automatiquement après un changement ; les copies sauvegardées
+sans validation sont comptées à la clôture avec la durée maximale. Une panne
+réseau avant réception de la sauvegarde peut perdre les derniers choix. Le temps
+inclut la latence réseau ; ce quiz n’est pas un dispositif d’examen surveillé.
+
+Les tentatives sont reconnues par un jeton aléatoire dans un cookie HttpOnly,
+dont seul le hash est stocké. Le nom n’est pas une identité vérifiée : utiliser
+un autre navigateur permet de s’inscrire de nouveau. Les bonnes réponses et les
+scores individuels ne sont jamais envoyés aux participants avant la clôture.
+Le classement nominatif final est accessible via le lien du quiz, ce qui est
+annoncé au moment de l’inscription.
+
+La synchronisation utilise des requêtes HTTP périodiques, sans clé Supabase
+publique ni abonnement Realtime. Deux tables, `Quiz` et `QuizPlayer`, sont ajoutées
+par `20261014020000_quiz`, avec RLS activée sur PostgreSQL. **Appliquer
+`npm run db:deploy` à Supabase avant de publier ce code sur Vercel.** Aucune
+formation ou réponse existante n’est supprimée par cette migration.
+
+Vérifications : `npm test`, `npm run lint`, `npm run build`. Avec un serveur local
+sur `127.0.0.1:3000` et `DATABASE_URL=file:...`, lancer
+`node tests/quiz-flow.integration.mjs` pour vérifier le parcours HTTP et 100 copies
+simulées par vagues de 20. Ce test nettoie uniquement ses propres données.
+Il ne remplace pas un test de 100 connexions sur Vercel/Supabase et le Wi-Fi réel.
+
 ## Stack technique
 
 Next.js 16 (App Router) · React 19 · Tailwind CSS 4 · Prisma 7 · Recharts · qrcode.react

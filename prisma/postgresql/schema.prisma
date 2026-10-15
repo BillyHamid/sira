@@ -23,6 +23,36 @@ model Session {
   createdAt DateTime   @default(now())
   responses Response[]
   attestation Attestation? // modèle de certificat optionnel attaché à la formation
+  quizzes Quiz[]
+}
+
+model Quiz {
+  id String @id @default(cuid())
+  slug String @unique
+  title String
+  sessionId String?
+  session Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  questions String
+  durationSeconds Int @default(300)
+  status String @default("DRAFT")
+  startedAt DateTime?
+  createdAt DateTime @default(now())
+  players QuizPlayer[]
+}
+
+model QuizPlayer {
+  id String @id @default(cuid())
+  quizId String
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  name String
+  tokenHash String @unique
+  answers String?
+  score Int @default(0)
+  elapsedMs Int?
+  finishedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([quizId, finishedAt])
 }
 
 // Modèle d'attestation (certificat) attaché à une formation.
