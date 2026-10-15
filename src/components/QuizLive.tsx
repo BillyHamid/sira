@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import { useEffect, useRef, useState } from "react";
+import { QRCodeCanvas } from "qrcode.react";
 
 export type LiveQuiz = {
   title: string; status: string; serverNow: number; startedAt: number | null; durationSeconds: number;
@@ -64,10 +64,20 @@ export function QuizPodium({ data }: { data: LiveQuiz }) {
 
 export default function QuizLive({ slug, shareUrl }: { slug: string; shareUrl: string }) {
   const { data, error } = useLiveQuiz(slug, true);
+  const qrRef = useRef<HTMLCanvasElement>(null);
+  function downloadQr() {
+    if (!qrRef.current) return;
+    const link = document.createElement("a");
+    link.href = qrRef.current.toDataURL("image/png");
+    link.download = `quiz-${slug}-qr.png`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
   return <section className="space-y-6">
     <div className="flex flex-wrap items-center gap-6 rounded-2xl border border-slate-200 bg-white p-6">
-      <div className="bg-white p-2"><QRCodeSVG value={shareUrl} size={148} level="M" marginSize={2} /></div>
-      <div className="min-w-0 flex-1"><p className="text-xs font-bold uppercase tracking-widest text-cyan-700">Accès participants</p><a href={shareUrl} className="mt-2 block break-all font-semibold text-slate-900 underline">{shareUrl}</a><p className="mt-2 text-sm text-slate-500">Projetez ce QR code ou imprimez cette page. Les participants s’inscrivent avant le départ.</p><button onClick={() => window.print()} className="mt-3 rounded-lg border px-3 py-2 text-sm print:hidden">Imprimer le QR code</button></div>
+      <div className="bg-white p-2"><QRCodeCanvas ref={qrRef} value={shareUrl} size={1024} level="M" marginSize={4} style={{ width: 148, height: 148 }} title="QR code pour rejoindre le quiz" /></div>
+      <div className="min-w-0 flex-1"><p className="text-xs font-bold uppercase tracking-widest text-cyan-700">Accès participants</p><a href={shareUrl} className="mt-2 block break-all font-semibold text-slate-900 underline">{shareUrl}</a><p className="mt-2 text-sm text-slate-500">Projetez ce QR code ou imprimez cette page. Les participants s’inscrivent avant le départ.</p><button type="button" onClick={downloadQr} className="mr-3 mt-3 rounded-lg bg-cyan-700 px-3 py-2 text-sm font-semibold text-white print:hidden">Télécharger le QR code (PNG)</button><button type="button" onClick={() => window.print()} className="mt-3 rounded-lg border px-3 py-2 text-sm print:hidden">Imprimer le QR code</button></div>
     </div>
     {error && <p role="status" className="rounded-xl bg-amber-50 p-4 text-amber-800">{error} · Nouvelle tentative automatique…</p>}
     {data ? <><div className="flex flex-wrap gap-3"><span className="rounded-full bg-cyan-100 px-4 py-2 font-semibold text-cyan-900">{data.count} inscrits</span><span className="rounded-full bg-slate-200 px-4 py-2">{data.finished} copies rendues</span><span className="rounded-full bg-slate-200 px-4 py-2">{({ DRAFT: "Brouillon", LOBBY: "Inscriptions ouvertes", RUNNING: "En cours", CLOSED: "Terminé" } as Record<string, string>)[data.status]}</span></div><QuizPodium data={data} /></> : <p>Chargement du classement…</p>}
