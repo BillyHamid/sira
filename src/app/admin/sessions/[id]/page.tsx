@@ -13,6 +13,7 @@ import {
 import AdminHeader from "../../AdminHeader";
 import ShareCard from "./ShareCard";
 import AttestationCard from "./AttestationCard";
+import EventSurveyResults from "@/components/EventSurveyResults";
 import {
   GaugeChart,
   RadarProfile,
@@ -68,7 +69,7 @@ export default async function SessionDashboard({
 
   const stats = computeStats(session.responses);
   const comments = session.responses.filter(
-    (r) => r.commentaire && r.commentaire.trim().length > 0
+    (r) => !r.surveyData && r.commentaire && r.commentaire.trim().length > 0
   );
 
   // Répartition par type d'appareil (donnée d'audit anonyme).
@@ -139,18 +140,19 @@ export default async function SessionDashboard({
             </div>
           )}
 
-          {session.responses.length === 0 ? (
+          <EventSurveyResults responses={session.responses} />
+          {stats.total === 0 ? (
             <div className="mt-8 grid gap-8 lg:grid-cols-3">
               <div className="lg:col-span-2">
                 <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-12 text-center text-sm text-slate-500">
-                  Aucune réponse pour l&apos;instant. Partagez le lien ou le QR
-                  code ci-contre pour commencer à recueillir des évaluations.
+                  {session.responses.length ? "Les résultats du questionnaire Oui/Non sont affichés ci-dessus." : "Aucune réponse pour l’instant. Partagez le lien ou le QR code ci-contre pour recueillir des évaluations."}
                 </div>
               </div>
               <ShareCard slug={session.slug} baseUrl={baseUrl} />
             </div>
           ) : (
             <>
+              <h2 className="mt-8 text-xl font-semibold">Anciennes évaluations sur 5</h2>
               {/* Cartes chiffres clés */}
               <section className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <StatCard label="Réponses" value={String(stats.total)} />

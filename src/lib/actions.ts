@@ -11,6 +11,7 @@ import {
   isAuthenticated,
 } from "./auth";
 import { CRITERIA } from "./criteria";
+import { validateEventSurvey } from "./event-survey";
 import { confirmEvaluation } from "./evaluation-progress";
 
 // --- Génération d'un slug court et unique pour l'URL publique ---
@@ -130,9 +131,17 @@ export async function submitResponseAction(formData: FormData): Promise<
     return { success: false, error: "Cette évaluation est fermée." };
   }
 
-  // Lecture et validation des 8 notes (1..5)
+  let surveyData: string | null = null;
+  const surveyInput = formData.get("surveyData");
+  if (typeof surveyInput === "string" && surveyInput) {
+    if (surveyInput.length > 60000) return { success: false, error: "Questionnaire trop volumineux." };
+    try { surveyData = JSON.stringify(validateEventSurvey(JSON.parse(surveyInput))); }
+    catch (error) { return { success: false, error: error instanceof SyntaxError ? "Questionnaire invalide." : (error as Error).message }; }
+  }
+  // Les anciennes notes restent compatibles ; les nouveaux formulaires sont stockés séparément.
   const notes: Record<string, number> = {};
   for (const c of CRITERIA) {
+    if (surveyData) { notes[c.key] = 0; continue; }
     const raw = Number(formData.get(c.key));
     if (!Number.isInteger(raw) || raw < 1 || raw > 5) {
       return { success: false, error: "Veuillez noter tous les critères de 1 à 5." };
@@ -172,6 +181,7 @@ export async function submitResponseAction(formData: FormData): Promise<
     data: {
       sessionId: session.id,
       commentaire,
+      surveyData,
       deviceId,
       ipAddress,
       userAgent,

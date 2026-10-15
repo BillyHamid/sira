@@ -119,6 +119,7 @@ model Response {
   supportPedagogique Int
 
   commentaire String?
+  surveyData String? // Questionnaire Odoo Oui/Non versionné, profil inclus.
 
   // Données techniques anonymes (audit + anti-doublon) — jamais affichées au public.
   deviceId  String? // identifiant aléatoire stocké sur l'appareil du participant

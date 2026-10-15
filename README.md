@@ -68,7 +68,26 @@ client avec `npx prisma generate`. Une contrainte unique protège les réponses
 contre les doubles envois d’un même appareil. Si une base ancienne contient déjà
 des doublons, la migration échoue sans supprimer de réponses.
 
-## Les 8 critères évalués
+## Questionnaire événement Odoo
+
+Le formulaire `/eval/[slug]` reprend la fiche événement : profil du participant,
+cinq questions d’évaluation Oui/Non présentées une par une, puis un bloc des
+problématiques avec choix multiples et précisions si Oui. Viennent ensuite le
+projet de modernisation financière (avec description si Oui), la rencontre
+personnalisée et sa période souhaitée, puis le commentaire final facultatif.
+Le bouton Précédent conserve les choix. Le format versionné v2 conserve la
+lecture des anciennes réponses v1 sans migration supplémentaire.
+
+Les profils et réponses sont visibles uniquement dans l’admin et l’export CSV.
+Les anciennes évaluations sur 5 restent conservées et leurs moyennes excluent les
+nouveaux questionnaires. L’évaluation reste requise avant la création du compte
+d’attestation, et une seule réponse est conservée par appareil et formation.
+
+Avant de déployer : appliquer `20261015010000_event_survey` sur Supabase avec
+`npm run db:deploy`. Cette migration ajoute un champ texte nullable `surveyData`
+à `Response`, sans supprimer ou réinterpréter les réponses existantes.
+
+## Anciennes évaluations sur 5
 
 - *Organisme formateur* : Méthode pédagogique · Contenu du programme · Compétence du formateur · Qualité d'animation
 - *Action de formation* : Durée · Application professionnelle · Atteinte des objectifs · Support pédagogique

@@ -48,12 +48,8 @@ export default async function EvalPage({
         </header>
 
         <p className="mt-5 text-sm text-slate-600">
-          Indiquez votre degré d&apos;appréciation pour chacun des énoncés
-          ci-dessous selon l&apos;échelle&nbsp;:{" "}
-          <span className="font-medium text-slate-700">
-            1 = Faible · 2 = Moyen · 3 = Assez bien · 4 = Bien · 5 = Très bien
-          </span>
-          .
+          Répondez aux cinq questions d’évaluation, puis indiquez vos problématiques,
+          votre projet et votre souhait de rencontre. Un commentaire termine le parcours.
         </p>
 
         {!session.active && (

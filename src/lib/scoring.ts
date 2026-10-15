@@ -2,7 +2,7 @@
 import { CRITERIA, CriterionKey, SCALE_MAX } from "./criteria";
 
 // Forme minimale d'une réponse nécessaire aux calculs (les 8 critères notés).
-export type ScorableResponse = Record<CriterionKey, number>;
+export type ScorableResponse = Record<CriterionKey, number> & { surveyData?: string | null };
 
 // Moyenne des 8 critères d'une réponse, sur 5.
 export function responseAverage(r: ScorableResponse): number {
@@ -33,6 +33,7 @@ export interface SessionStats {
 }
 
 export function computeStats(responses: ScorableResponse[]): SessionStats {
+  responses = responses.filter((r) => !r.surveyData);
   const total = responses.length;
 
   const parCritere: CriterionStat[] = CRITERIA.map((c) => {

@@ -99,8 +99,8 @@ export default async function AdminDashboard({
                       </div>
                       <div className="mt-3 flex items-center gap-4 text-sm text-slate-600">
                         <span>
-                          <strong>{stats.total}</strong> réponse
-                          {stats.total > 1 ? "s" : ""}
+                          <strong>{s.responses.length}</strong> réponse
+                          {s.responses.length > 1 ? "s" : ""}
                         </span>
                         <span>
                           Moyenne :{" "}

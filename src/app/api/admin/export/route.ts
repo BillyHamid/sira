@@ -4,10 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { CRITERIA } from "@/lib/criteria";
 import { responseAverage } from "@/lib/scoring";
 import { deviceLabel } from "@/lib/device";
+import { EVENT_QUESTIONS, PROFILE_FIELDS, readEventSurvey } from "@/lib/event-survey";
 
 // Échappe une valeur pour le format CSV.
 function csvCell(value: string | number | null): string {
-  const s = value == null ? "" : String(value);
+  const raw = value == null ? "" : String(value);
+  const s = /^[=+@\-\t\r]/.test(raw) ? `'${raw}` : raw;
   if (/[";\n]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
   }
@@ -34,6 +36,13 @@ export async function GET(req: NextRequest) {
 
   const headers = [
     "Date",
+    "Format",
+    ...PROFILE_FIELDS.map((f) => f.label),
+    ...EVENT_QUESTIONS.map((q) => q.text),
+    "Période de rencontre souhaitée",
+    "Autres problématiques",
+    "Grandes lignes des problématiques",
+    "Description du projet de modernisation",
     ...CRITERIA.map((c) => c.label),
     "Moyenne /5",
     "Commentaire",
@@ -42,11 +51,19 @@ export async function GET(req: NextRequest) {
   ];
 
   const rows = session.responses.map((r) => {
+    const survey = readEventSurvey(r.surveyData);
     const moyenne = responseAverage(r);
     return [
       new Date(r.createdAt).toLocaleString("fr-FR"),
-      ...CRITERIA.map((c) => r[c.key]),
-      moyenne.toFixed(2),
+      survey ? "Odoo Oui/Non" : "Anciennes notes /5",
+      ...PROFILE_FIELDS.map((f) => survey?.profile[f.key] ?? ""),
+      ...EVENT_QUESTIONS.map((q) => survey ? survey.answers[q.key] === "oui" ? "Oui" : "Non" : ""),
+      survey?.meetingPeriod ?? "",
+      survey?.otherNeeds ? survey.otherNeeds === "oui" ? "Oui" : "Non" : "",
+      survey?.needsDetails ?? "",
+      survey?.projectDetails ?? "",
+      ...CRITERIA.map((c) => survey ? "" : r[c.key]),
+      survey ? "" : moyenne.toFixed(2),
       r.commentaire ?? "",
       deviceLabel(r.userAgent),
       r.ipAddress ?? "",
