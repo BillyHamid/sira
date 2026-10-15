@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getParticipantAccountId } from "@/lib/participant-auth";
-import { generateAttestation } from "@/lib/attestation-pdf";
+import { generateAttestation, formatParticipantName } from "@/lib/attestation-pdf";
 
 // Aperçu personnalisé de l'attestation du participant connecté, affiché inline dans
 // son espace. Ne consomme PAS le téléchargement unique (downloadedAt intact).
@@ -33,12 +33,14 @@ export async function GET(
   }
 
   const pdf = await generateAttestation(att, account);
+  const name = formatParticipantName(account).replace(/[^a-z0-9]+/gi, "_").toLowerCase();
 
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": "inline; filename=\"apercu_attestation.pdf\"",
+      "Content-Disposition": `inline; filename="attestation_${name}.pdf"`,
       "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }

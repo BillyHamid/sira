@@ -62,7 +62,7 @@ export default async function EspacePage({
                 name={downloaded ? "check" : "award"}
                 className="h-3.5 w-3.5"
               />
-              {downloaded ? "Attestation téléchargée" : "Attestation disponible"}
+              {downloaded ? "Téléchargement déjà demandé" : "Attestation disponible"}
             </span>
             <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
               Bonjour {account!.prenom} 👋
@@ -117,21 +117,26 @@ export default async function EspacePage({
                 className="mt-3 flex items-center justify-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline"
               >
                 <Icon name="eye" className="h-4 w-4" />
-                Ouvrir l&apos;aperçu en plein écran
+                Ouvrir mon PDF et l’enregistrer
               </a>
             </div>
 
             <div className="mt-5">
+              <p className="mb-4 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+                <strong>Sur iPhone :</strong> ouvrez le PDF avec le lien ci-dessus, puis touchez Partager → Enregistrer dans Fichiers.
+                Vous le retrouverez dans l’app Fichiers, à l’emplacement choisi. Si vous êtes dans WhatsApp ou un autre navigateur intégré, ouvrez d’abord cette page dans Safari.
+                Ce lien reste disponible même si le téléchargement a déjà été demandé.
+              </p>
               {downloaded ? (
                 <div className="space-y-3">
                   <Alert tone="warning">
-                    Attestation téléchargée le{" "}
+                    Téléchargement demandé le{" "}
                     {new Date(account!.downloadedAt!).toLocaleString("fr-FR")}.
-                    L&apos;aperçu ci-dessus reste consultable à tout moment.
+                    Vous pouvez toujours ouvrir et enregistrer le PDF avec le lien ci-dessus. Si nécessaire, contactez l’organisateur pour recevoir une copie.
                   </Alert>
                   <button disabled className={buttonClass("disabled")}>
                     <Icon name="check" className="h-5 w-5" />
-                    Attestation déjà téléchargée
+                    Téléchargement déjà lancé
                   </button>
                 </div>
               ) : (

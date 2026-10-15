@@ -134,6 +134,7 @@ function ParticipantsList({ accounts }: { accounts: AccountRow[] }) {
                 <th className="px-3 py-2 font-medium">Contact</th>
                 <th className="px-3 py-2 font-medium">Inscrit le</th>
                 <th className="px-3 py-2 font-medium">Téléchargement</th>
+                <th className="px-3 py-2 font-medium">Copie administrateur</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -167,6 +168,11 @@ function ParticipantsList({ accounts }: { accounts: AccountRow[] }) {
                         Pas encore
                       </span>
                     )}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2">
+                    <a href={`/api/admin/attestation/download?accountId=${encodeURIComponent(a.id)}`} target="_blank" rel="noreferrer" className="inline-flex rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-700" aria-label={`Télécharger l’attestation de ${a.nom} ${a.prenom}`}>
+                      Télécharger le PDF
+                    </a>
                   </td>
                 </tr>
               ))}

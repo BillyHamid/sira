@@ -57,11 +57,26 @@ participant sur la première page. Les nouveaux comptes utilisent un mot de pass
 d’au moins 8 caractères, protégé par scrypt. Les anciens comptes sont migrés à leur
 prochaine connexion, à condition de conserver leur `AUTH_SECRET` initial.
 
-Le téléchargement reste unique. En cas de réception interrompue, l’administrateur
+Le bouton de téléchargement reste unique et ouvre directement la réponse PDF
+native, sans URL blob temporaire. Le lien **Ouvrir mon PDF et l’enregistrer**
+reste disponible après la première demande. Sur iPhone, ouvrir ce PDF dans
+Safari, puis Partager → Enregistrer dans Fichiers ; le document se retrouve à
+l’emplacement choisi dans l’app Fichiers. Une demande serveur ne prouve pas que
+le navigateur a effectivement enregistré le fichier sur l’appareil.
+
+Dans la liste des participants, **Télécharger le PDF** permet à l’administrateur
+de récupérer chaque attestation personnalisée, même déjà téléchargée ou
+désactivée pour le public. Cette copie est protégée par la session admin et ne
+consomme pas le droit du participant. Aucun lien public de récupération n’est créé.
+
+En cas de réception interrompue, l’administrateur
 peut cliquer sur **Réautoriser le téléchargement** dans la liste des participants.
 Une attestation désactivée n’est plus accessible, y compris avec une session ouverte.
 
 Vérification : `npm test`, `npm run lint`, `npm run build`.
+Avec le serveur local démarré, `node tests/attestation-download.integration.mjs`
+vérifie les autorisations, les copies admin et l’ouverture inline après téléchargement.
+Un test physique sur iPhone reste nécessaire pour confirmer le comportement Safari.
 
 Appliquer les migrations avec `npx prisma migrate deploy`, puis régénérer le
 client avec `npx prisma generate`. Une contrainte unique protège les réponses
